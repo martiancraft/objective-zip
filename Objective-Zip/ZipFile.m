@@ -1,6 +1,6 @@
 //
 //  ZipFile.m
-//  Objective-Zip v. 0.7.2
+//  Objective-Zip v. 0.8
 //
 //  Created by Gianluca Bertani on 25/12/09.
 //  Copyright 2009-10 Flying Dolphin Studio. All rights reserved.
@@ -39,11 +39,12 @@
 
 #define FILE_IN_ZIP_MAX_NAME_LENGTH (256)
 
+
 @implementation ZipFile
 
 
 - (id) initWithFileName:(NSString *)fileName mode:(ZipFileMode)mode {
-	if ((self= [super init])) {
+	if (self= [super init]) {
 		_fileName= [fileName retain];
 		_mode= mode;
 		
@@ -54,25 +55,6 @@
 					NSString *reason= [NSString stringWithFormat:@"Can't open '%@'", _fileName];
 					@throw [[[ZipException alloc] initWithReason:reason] autorelease];
 				}
-                
-                unzGoToFirstFile(_unzFile);
-                
-                NSMutableDictionary* dic = [NSMutableDictionary dictionary];
-                
-                do {
-                    FileInZipInfo* info = [self getCurrentFileInZipInfo];
-                    unz_file_pos pos;
-                    int err = unzGetFilePos(_unzFile, &pos);
-                    if (err == UNZ_OK) {
-                        [dic setObject:[NSArray arrayWithObjects:
-                                        [NSNumber numberWithLong:pos.pos_in_zip_directory],
-                                        [NSNumber numberWithLong:pos.num_of_file],
-                                        nil] forKey:info.name];
-                    }
-                } while (unzGoToNextFile (_unzFile) != UNZ_END_OF_LIST_OF_FILE);
-                
-                contents = [dic retain];
-                
 				break;
 				
 			case ZipFileModeCreate:
@@ -103,7 +85,6 @@
 
 - (void) dealloc {
 	[_fileName release];
-    [contents release];
 	[super dealloc];
 }
 
@@ -117,12 +98,12 @@
 	NSCalendar *calendar= [NSCalendar currentCalendar];
 	NSDateComponents *date= [calendar components:(NSSecondCalendarUnit | NSMinuteCalendarUnit | NSHourCalendarUnit | NSDayCalendarUnit | NSMonthCalendarUnit | NSYearCalendarUnit) fromDate:now];	
 	zip_fileinfo zi;
-	zi.tmz_date.tm_sec= (uInt)[date second];
-	zi.tmz_date.tm_min= (uInt)[date minute];
-	zi.tmz_date.tm_hour= (uInt)[date hour];
-	zi.tmz_date.tm_mday= (uInt)[date day];
-	zi.tmz_date.tm_mon= (uInt)[date month] -1;
-	zi.tmz_date.tm_year= (uInt)[date year];
+	zi.tmz_date.tm_sec= [date second];
+	zi.tmz_date.tm_min= [date minute];
+	zi.tmz_date.tm_hour= [date hour];
+	zi.tmz_date.tm_mday= [date day];
+	zi.tmz_date.tm_mon= [date month] -1;
+	zi.tmz_date.tm_year= [date year];
 	zi.internal_fa= 0;
 	zi.external_fa= 0;
 	zi.dosDate= 0;
@@ -153,12 +134,12 @@
 	NSCalendar *calendar= [NSCalendar currentCalendar];
 	NSDateComponents *date= [calendar components:(NSSecondCalendarUnit | NSMinuteCalendarUnit | NSHourCalendarUnit | NSDayCalendarUnit | NSMonthCalendarUnit | NSYearCalendarUnit) fromDate:fileDate];	
 	zip_fileinfo zi;
-	zi.tmz_date.tm_sec= (uInt)[date second];
-	zi.tmz_date.tm_min= (uInt)[date minute];
-	zi.tmz_date.tm_hour= (uInt)[date hour];
-	zi.tmz_date.tm_mday= (uInt)[date day];
-	zi.tmz_date.tm_mon= (uInt)[date month] -1;
-	zi.tmz_date.tm_year= (uInt)[date year];
+	zi.tmz_date.tm_sec= [date second];
+	zi.tmz_date.tm_min= [date minute];
+	zi.tmz_date.tm_hour= [date hour];
+	zi.tmz_date.tm_mday= [date day];
+	zi.tmz_date.tm_mon= [date month] -1;
+	zi.tmz_date.tm_year= [date year];
 	zi.internal_fa= 0;
 	zi.external_fa= 0;
 	zi.dosDate= 0;
@@ -189,12 +170,12 @@
 	NSCalendar *calendar= [NSCalendar currentCalendar];
 	NSDateComponents *date= [calendar components:(NSSecondCalendarUnit | NSMinuteCalendarUnit | NSHourCalendarUnit | NSDayCalendarUnit | NSMonthCalendarUnit | NSYearCalendarUnit) fromDate:fileDate];	
 	zip_fileinfo zi;
-	zi.tmz_date.tm_sec= (uInt)[date second];
-	zi.tmz_date.tm_min= (uInt)[date minute];
-	zi.tmz_date.tm_hour= (uInt)[date hour];
-	zi.tmz_date.tm_mday= (uInt)[date day];
-	zi.tmz_date.tm_mon= (uInt)[date month] -1;
-	zi.tmz_date.tm_year= (uInt)[date year];
+	zi.tmz_date.tm_sec= [date second];
+	zi.tmz_date.tm_min= [date minute];
+	zi.tmz_date.tm_hour= [date hour];
+	zi.tmz_date.tm_mday= [date day];
+	zi.tmz_date.tm_mon= [date month] -1;
+	zi.tmz_date.tm_year= [date year];
 	zi.internal_fa= 0;
 	zi.external_fa= 0;
 	zi.dosDate= 0;
@@ -216,6 +197,10 @@
 	return [[[ZipWriteStream alloc] initWithZipFileStruct:_zipFile fileNameInZip:fileNameInZip] autorelease];
 }
 
+- (NSString*) fileName {
+	return _fileName;
+}
+
 - (NSUInteger) numFilesInZip {
 	if (_mode != ZipFileModeUnzip) {
 		NSString *reason= [NSString stringWithFormat:@"Operation not permitted without Unzip mode"];
@@ -233,7 +218,7 @@
 }
 
 - (NSArray *) listFileInZipInfos {
-	int num= (uInt)[self numFilesInZip];
+	int num= [self numFilesInZip];
 	if (num < 1)
 		return [[[NSArray alloc] init] autorelease];
 	
@@ -288,19 +273,8 @@
 		@throw [[[ZipException alloc] initWithReason:reason] autorelease];
 	}
 	
-	//int err= unzLocateFile(_unzFile, [fileNameInZip cStringUsingEncoding:NSUTF8StringEncoding], 1);
-	
-    NSArray* info = [contents objectForKey:fileNameInZip];
-    
-    if (!info) return NO;
-    
-    unz_file_pos pos;
-    pos.pos_in_zip_directory = [[info objectAtIndex:0] longValue];
-    pos.num_of_file = [[info objectAtIndex:1] longValue];
-    
-    int err = unzGoToFilePos(_unzFile, &pos);
-    
-    if (err == UNZ_END_OF_LIST_OF_FILE)
+	int err= unzLocateFile(_unzFile, [fileNameInZip cStringUsingEncoding:NSUTF8StringEncoding], 1);
+	if (err == UNZ_END_OF_LIST_OF_FILE)
 		return NO;
 
 	if (err != UNZ_OK) {
