@@ -865,8 +865,11 @@ extern int ZEXPORT unzLocateFile (file, szFileName, iCaseSensitivity)
     cur_file_infoSaved = s->cur_file_info;
     cur_file_info_internalSaved = s->cur_file_info_internal;
 
-    err = unzGoToFirstFile(file);
-
+    // NI - what I've done here is adjust the logic so that instead of starting at the beginning of the directory each time
+    //      we start off where we left off. When we get to the end of the list of files, we start again.
+    //      we only exit when the number of the file we're inspecting is the same as the one we started with.
+    //      ie we're at the start of the loop
+    err = UNZ_OK;
     while (err == UNZ_OK)
     {
         char szCurrentFileName[UNZ_MAXFILENAMEINZIP+1];
@@ -880,6 +883,18 @@ extern int ZEXPORT unzLocateFile (file, szFileName, iCaseSensitivity)
                 return UNZ_OK;
             err = unzGoToNextFile(file);
         }
+        
+        //if we're at the end of the file, start at the beginning
+        if (err == UNZ_END_OF_LIST_OF_FILE) {
+            err = unzGoToFirstFile(file);
+        }
+        
+        //if we're back to the file we started with, then we've been round the entire list of files and not found it
+        //time to exit
+        if (num_fileSaved == s->num_file) {
+            err = UNZ_END_OF_LIST_OF_FILE;
+        }
+        
     }
 
     /* We failed, so restore the state of the 'current file' to where we
