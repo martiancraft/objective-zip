@@ -50,6 +50,28 @@
 	return self;
 }
 
+- (BOOL)isEqual:(id)other {
+    if (other == self)
+        return YES;
+    if (!other || ![other isKindOfClass:[self class]])
+        return NO;
+    
+    BOOL sameName = [self.name isEqualToString:((FileInZipInfo*)other).name];
+    BOOL sameSize = self.size == ((FileInZipInfo*)other).size;
+    BOOL sameCRC = self.crc32 == ((FileInZipInfo*)other).crc32;
+    if (sameName && sameSize) {
+        return YES;
+    }
+    return NO;
+}
+
+- (NSUInteger)hash
+{
+    NSUInteger *hashValue = [self.name hash] ^ self.size ^ self.crc32;
+    return hashValue;
+}
+
+
 - (void) dealloc {
 	[_date release];
 	[_name release];
